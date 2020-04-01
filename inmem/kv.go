@@ -296,6 +296,7 @@ func (b *Bucket) ForwardCursor(seek []byte, opts ...kv.CursorOption) (kv.Forward
 			fn        = config.Hints.PredicateFn
 			iterate   = b.ascend
 			skipFirst = config.SkipFirst
+			count     int64
 		)
 
 		if config.Direction == kv.CursorDescending {
@@ -328,12 +329,16 @@ func (b *Bucket) ForwardCursor(seek []byte, opts ...kv.CursorOption) (kv.Forward
 				return false
 			}
 
-			if config.Prefix != nil && !bytes.HasPrefix(j.key, config.Prefix) {
+			// stop iterating if we stop matching the configure prefix
+			// or we reach the configured limit
+			if (config.Prefix != nil && !bytes.HasPrefix(j.key, config.Prefix)) ||
+				(config.Limit != nil && count >= *config.Limit) {
 				return false
 			}
 
 			if fn == nil || fn(j.key, j.value) {
 				batch = append(batch, pair{Pair: kv.Pair{Key: j.key, Value: j.value}})
+				count++
 			}
 
 			if len(batch) < cursorBatchSize {
@@ -389,7 +394,6 @@ func (c *ForwardCursor) Err() error {
 // Close releases the producing goroutines for the forward cursor.
 // It blocks until the producing goroutine exits.
 func (c *ForwardCursor) Close() error {
-
 	if c.closed {
 		return nil
 	}

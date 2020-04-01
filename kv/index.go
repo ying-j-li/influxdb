@@ -580,7 +580,9 @@ func indexWalk(ctx context.Context, indexCursor ForwardCursor, sourceBucket Buck
 // which needs to lookup using cursors instead of individual get operations.
 func getKeyUsingRange(ctx context.Context, bucket Bucket, key []byte) ([]byte, error) {
 	cursor, err := bucket.ForwardCursor(key,
-		WithCursorPrefix(key))
+		WithCursorPrefix(key),
+		WithCursorLimit(1),
+	)
 	if err != nil {
 		return nil, err
 	}

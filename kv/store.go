@@ -149,6 +149,7 @@ type CursorConfig struct {
 	Hints     CursorHints
 	Prefix    []byte
 	SkipFirst bool
+	Limit     *int64
 }
 
 // NewCursorConfig constructs and configures a CursorConfig used to configure
@@ -197,6 +198,14 @@ func WithCursorPrefix(prefix []byte) CursorOption {
 func WithCursorSkipFirstItem() CursorOption {
 	return func(c *CursorConfig) {
 		c.SkipFirst = true
+	}
+}
+
+// WithCursorLimit limits the cursor to return only the provided number
+// of keys.
+func WithCursorLimit(limit int64) CursorOption {
+	return func(c *CursorConfig) {
+		c.Limit = &limit
 	}
 }
 
