@@ -12,7 +12,6 @@ import (
 	"github.com/influxdata/influxdb/v2/cmd/influxd/generate"
 	"github.com/influxdata/influxdb/v2/cmd/influxd/inspect"
 	"github.com/influxdata/influxdb/v2/cmd/influxd/launcher"
-	"github.com/influxdata/influxdb/v2/cmd/influxd/migrate"
 	"github.com/influxdata/influxdb/v2/cmd/influxd/restore"
 	_ "github.com/influxdata/influxdb/v2/query/builtin"
 	_ "github.com/influxdata/influxdb/v2/tsdb/tsi1"
@@ -49,7 +48,7 @@ func init() {
 	rootCmd.AddCommand(generate.Command)
 	rootCmd.AddCommand(inspect.NewCommand())
 	rootCmd.AddCommand(restore.Command)
-	rootCmd.AddCommand(migrate.Command)
+	// rootCmd.AddCommand(migrate.Command)
 
 	// TODO: this should be removed in the future: https://github.com/influxdata/influxdb/issues/16220
 	if os.Getenv("QUERY_TRACING") == "1" {

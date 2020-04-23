@@ -3,12 +3,13 @@ package storage
 import (
 	"context"
 
-	"github.com/influxdata/influxdb/v2/models"
+	"github.com/influxdata/influxdb/v2"
+	"github.com/influxdata/influxdb/v2/v1/models"
 )
 
 // PointsWriter describes the ability to write points into a storage engine.
 type PointsWriter interface {
-	WritePoints(context.Context, []models.Point) error
+	WritePoints(ctx context.Context, orgID influxdb.ID, bucketID influxdb.ID, points []models.Point) error
 }
 
 type BufferedPointsWriter struct {
@@ -18,6 +19,7 @@ type BufferedPointsWriter struct {
 	err error
 }
 
+//TODO - org id bucket id
 func NewBufferedPointsWriter(size int, pointswriter PointsWriter) *BufferedPointsWriter {
 	return &BufferedPointsWriter{
 		buf: make([]models.Point, size),
@@ -31,7 +33,7 @@ func (b *BufferedPointsWriter) WritePoints(ctx context.Context, p []models.Point
 		if b.Buffered() == 0 {
 			// Large write, empty buffer.
 			// Write directly from p to avoid copy.
-			b.err = b.wr.WritePoints(ctx, p)
+			b.err = b.wr.WritePoints(ctx, 0, 0, p)
 			return b.err
 		}
 		n := copy(b.buf[b.n:], p)
@@ -61,7 +63,7 @@ func (b *BufferedPointsWriter) Flush(ctx context.Context) error {
 		return nil
 	}
 
-	b.err = b.wr.WritePoints(ctx, b.buf[:b.n])
+	b.err = b.wr.WritePoints(ctx, 0, 0, b.buf[:b.n])
 	if b.err != nil {
 		return b.err
 	}

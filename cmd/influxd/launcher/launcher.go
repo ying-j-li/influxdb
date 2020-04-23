@@ -172,7 +172,7 @@ func buildLauncherCommand(l *Launcher, cmd *cobra.Command) {
 		{
 			DestP:   &l.enginePath,
 			Flag:    "engine-path",
-			Default: filepath.Join(dir, "engine"),
+			Default: dir,
 			Desc:    "path to persistent engine files",
 		},
 		{
@@ -346,10 +346,11 @@ type Launcher struct {
 	maxMemoryBytes                  int
 	queueSize                       int
 
-	boltClient    *bolt.Client
-	kvStore       kv.Store
-	kvService     *kv.Service
-	engine        Engine
+	boltClient *bolt.Client
+	kvStore    kv.Store
+	kvService  *kv.Service
+	//TODO fix
+	engine        *storage.Engine
 	StorageConfig storage.Config
 
 	queryController *control.Controller
@@ -424,9 +425,9 @@ func (m *Launcher) NatsURL() string {
 
 // Engine returns a reference to the storage engine. It should only be called
 // for end-to-end testing purposes.
-func (m *Launcher) Engine() Engine {
-	return m.engine
-}
+// func (m *Launcher) Engine() Engine {
+// 	return m.engine
+// }
 
 // Shutdown shuts down the HTTP server and waits for all services to clean up.
 func (m *Launcher) Shutdown(ctx context.Context) {
@@ -659,14 +660,15 @@ func (m *Launcher) run(ctx context.Context) (err error) {
 		return err
 	}
 
-	if m.testing {
-		// the testing engine will write/read into a temporary directory
-		engine := NewTemporaryEngine(m.StorageConfig, storage.WithRetentionEnforcer(bucketSvc))
-		flushers = append(flushers, engine)
-		m.engine = engine
-	} else {
-		m.engine = storage.NewEngine(m.enginePath, m.StorageConfig, storage.WithRetentionEnforcer(bucketSvc))
-	}
+	// TODO - clean up
+	// if m.testing {
+	// 	// the testing engine will write/read into a temporary directory
+	// 	engine := NewTemporaryEngine(m.StorageConfig, storage.WithRetentionEnforcer(bucketSvc))
+	// 	flushers = append(flushers, engine)
+	// 	m.engine = engine
+	// } else {
+	m.engine = storage.NewEngine(m.enginePath, m.StorageConfig, storage.WithRetentionEnforcer(bucketSvc))
+	// }
 	m.engine.WithLogger(m.log)
 	if err := m.engine.Open(ctx); err != nil {
 		m.log.Error("Failed to open engine", zap.Error(err))

@@ -15,9 +15,8 @@ import (
 	"github.com/influxdata/influxdb/v2/http/metric"
 	"github.com/influxdata/influxdb/v2/kit/tracing"
 	kithttp "github.com/influxdata/influxdb/v2/kit/transport/http"
-	"github.com/influxdata/influxdb/v2/models"
 	"github.com/influxdata/influxdb/v2/storage"
-	"github.com/influxdata/influxdb/v2/tsdb"
+	"github.com/influxdata/influxdb/v2/v1/models"
 	"go.uber.org/zap"
 )
 
@@ -67,10 +66,10 @@ type WriteHandler struct {
 	EventRecorder metric.EventRecorder
 
 	maxBatchSizeBytes int64
-	parserOptions     []models.ParserOption
-	parserMaxBytes    int
-	parserMaxLines    int
-	parserMaxValues   int
+	// parserOptions     []models.ParserOption
+	parserMaxBytes  int
+	parserMaxLines  int
+	parserMaxValues int
 }
 
 // WriteHandlerOption is a functional option for a *WriteHandler
@@ -136,16 +135,17 @@ func NewWriteHandler(log *zap.Logger, b *WriteBackend, opts ...WriteHandlerOptio
 		opt(h)
 	}
 
+	// TODO FIGURE OUT
 	// cache configured options
-	if h.parserMaxBytes > 0 {
-		h.parserOptions = append(h.parserOptions, models.WithParserMaxBytes(h.parserMaxBytes))
-	}
-	if h.parserMaxLines > 0 {
-		h.parserOptions = append(h.parserOptions, models.WithParserMaxLines(h.parserMaxLines))
-	}
-	if h.parserMaxValues > 0 {
-		h.parserOptions = append(h.parserOptions, models.WithParserMaxValues(h.parserMaxValues))
-	}
+	// if h.parserMaxBytes > 0 {
+	// 	h.parserOptions = append(h.parserOptions, models.WithParserMaxBytes(h.parserMaxBytes))
+	// }
+	// if h.parserMaxLines > 0 {
+	// 	h.parserOptions = append(h.parserOptions, models.WithParserMaxLines(h.parserMaxLines))
+	// }
+	// if h.parserMaxValues > 0 {
+	// 	h.parserOptions = append(h.parserOptions, models.WithParserMaxValues(h.parserMaxValues))
+	// }
 
 	h.HandlerFunc("POST", prefixWrite, h.handleWrite)
 	return h
@@ -271,37 +271,38 @@ func (h *WriteHandler) handleWrite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	span, _ = tracing.StartSpanFromContextWithOperationName(ctx, "encoding and parsing")
-	encoded := tsdb.EncodeName(org.ID, bucket.ID)
-	mm := models.EscapeMeasurement(encoded[:])
+	// encoded := tsdb.EncodeName(org.ID, bucket.ID)
+	// mm := models.EscapeMeasurement(encoded[:])
 
-	var options []models.ParserOption
-	if len(h.parserOptions) > 0 {
-		options = make([]models.ParserOption, 0, len(h.parserOptions)+1)
-		options = append(options, h.parserOptions...)
-	}
+	// var options []models.ParserOption
+	// if len(h.parserOptions) > 0 {
+	// 	options = make([]models.ParserOption, 0, len(h.parserOptions)+1)
+	// 	options = append(options, h.parserOptions...)
+	// }
 
-	if req.Precision != nil {
-		options = append(options, req.Precision)
-	}
+	// if req.Precision != nil {
+	// 	options = append(options, req.Precision)
+	// }
 
-	points, err := models.ParsePointsWithOptions(data, mm, options...)
+	points, err := models.ParsePoints(data)
 	span.LogKV("values_total", len(points))
 	span.Finish()
 	if err != nil {
 		log.Error("Error parsing points", zap.Error(err))
 
 		code := influxdb.EInvalid
-		if errors.Is(err, models.ErrLimitMaxBytesExceeded) ||
-			errors.Is(err, models.ErrLimitMaxLinesExceeded) ||
-			errors.Is(err, models.ErrLimitMaxValuesExceeded) {
-			code = influxdb.ETooLarge
-		}
+		// TODO - backport these
+		// if errors.Is(err, models.ErrLimitMaxBytesExceeded) ||
+		// 	errors.Is(err, models.ErrLimitMaxLinesExceeded) ||
+		// 	errors.Is(err, models.ErrLimitMaxValuesExceeded) {
+		// 	code = influxdb.ETooLarge
+		// }
 
 		handleError(err, code, "")
 		return
 	}
 
-	if err := h.PointsWriter.WritePoints(ctx, points); err != nil {
+	if err := h.PointsWriter.WritePoints(ctx, org.ID, bucket.ID, points); err != nil {
 		log.Error("Error writing points", zap.Error(err))
 		handleError(err, influxdb.EInternal, "unexpected error writing points to database")
 		return
@@ -317,23 +318,24 @@ func decodeWriteRequest(ctx context.Context, r *http.Request) (*postWriteRequest
 		p = "ns"
 	}
 
-	if !models.ValidPrecision(p) {
-		return nil, &influxdb.Error{
-			Code: influxdb.EInvalid,
-			Op:   "http/decodeWriteRequest",
-			Msg:  errInvalidPrecision,
-		}
-	}
+	// if !models.ValidPrecision(p) {
+	// 	return nil, &influxdb.Error{
+	// 		Code: influxdb.EInvalid,
+	// 		Op:   "http/decodeWriteRequest",
+	// 		Msg:  errInvalidPrecision,
+	// 	}
+	// }
 
-	var precision models.ParserOption
-	if p != "ns" {
-		precision = models.WithParserPrecision(p)
-	}
+	// var precision models.ParserOption
+	// if p != "ns" {
+	// 	precision = models.WithParserPrecision(p)
+	// }
 
 	return &postWriteRequest{
-		Bucket:    qp.Get("bucket"),
-		Org:       qp.Get("org"),
-		Precision: precision,
+		Bucket: qp.Get("bucket"),
+		Org:    qp.Get("org"),
+		// Precision: "ns", // TODO support other precisions
+		// Precision: precision,
 	}, nil
 }
 
@@ -371,9 +373,10 @@ func readWriteRequest(ctx context.Context, rc io.ReadCloser, encoding string, ma
 }
 
 type postWriteRequest struct {
-	Org       string
-	Bucket    string
-	Precision models.ParserOption
+	Org    string
+	Bucket string
+	// TODO (backport?)
+	// Precision models.ParserOption
 }
 
 // WriteService sends data over HTTP to influxdb via line protocol.
@@ -392,13 +395,14 @@ func (s *WriteService) Write(ctx context.Context, orgID, bucketID influxdb.ID, r
 		precision = "ns"
 	}
 
-	if !models.ValidPrecision(precision) {
-		return &influxdb.Error{
-			Code: influxdb.EInvalid,
-			Op:   "http/Write",
-			Msg:  errInvalidPrecision,
-		}
-	}
+	// TODO backport?
+	// if !models.ValidPrecision(precision) {
+	// 	return &influxdb.Error{
+	// 		Code: influxdb.EInvalid,
+	// 		Op:   "http/Write",
+	// 		Msg:  errInvalidPrecision,
+	// 	}
+	// }
 
 	u, err := NewURL(s.Addr, prefixWrite)
 	if err != nil {
