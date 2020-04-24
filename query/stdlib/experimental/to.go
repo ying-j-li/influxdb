@@ -16,7 +16,7 @@ import (
 	"github.com/influxdata/influxdb/v2/query"
 	"github.com/influxdata/influxdb/v2/query/stdlib/influxdata/influxdb"
 	"github.com/influxdata/influxdb/v2/storage"
-	"github.com/influxdata/influxdb/v2/tsdb"
+	"github.com/influxdata/influxdb/v2/v1/tsdb"
 )
 
 // ToKind is the kind for the `to` flux function

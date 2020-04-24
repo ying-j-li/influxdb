@@ -13,7 +13,7 @@ package migrate
 // 	"github.com/influxdata/influxdb/v2/internal/fs"
 // 	"github.com/influxdata/influxdb/v2/kit/cli"
 // 	"github.com/influxdata/influxdb/v2/models"
-// 	"github.com/influxdata/influxdb/v2/tsdb/migrate"
+// 	"github.com/influxdata/influxdb/v2/v1/tsdb/migrate"
 // 	"github.com/spf13/cobra"
 // )
 

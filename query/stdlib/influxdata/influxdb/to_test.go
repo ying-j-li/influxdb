@@ -21,7 +21,7 @@ import (
 	_ "github.com/influxdata/influxdb/v2/query/builtin"
 	pquerytest "github.com/influxdata/influxdb/v2/query/querytest"
 	"github.com/influxdata/influxdb/v2/query/stdlib/influxdata/influxdb"
-	"github.com/influxdata/influxdb/v2/tsdb"
+	"github.com/influxdata/influxdb/v2/v1/tsdb"
 )
 
 func TestTo_Query(t *testing.T) {
