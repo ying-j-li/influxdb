@@ -13,7 +13,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/influxdata/influxdb/v2"
 	"github.com/influxdata/influxdb/v2/v1/tsdb"
-	"github.com/influxdata/influxdb/v2/v1/tsdb/engine/tsm1"
 )
 
 func TestWalDump_RunWriteEntries(t *testing.T) {

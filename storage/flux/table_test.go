@@ -15,18 +15,16 @@ import (
 	"github.com/influxdata/flux/memory"
 	"github.com/influxdata/flux/values"
 	"github.com/influxdata/influxdb/v2/cmd/influxd/generate"
-	"github.com/influxdata/influxdb/v2/mock"
-	"github.com/influxdata/influxdb/v2/models"
 	"github.com/influxdata/influxdb/v2/pkg/data/gen"
 	"github.com/influxdata/influxdb/v2/query/stdlib/influxdata/influxdb"
 	"github.com/influxdata/influxdb/v2/storage"
 	storageflux "github.com/influxdata/influxdb/v2/storage/flux"
-	"github.com/influxdata/influxdb/v2/storage/readservice"
+	"github.com/influxdata/influxdb/v2/v1/models"
+	storage2 "github.com/influxdata/influxdb/v2/v1/services/storage"
 	"go.uber.org/zap/zaptest"
 )
 
 func BenchmarkReadFilter(b *testing.B) {
-	idgen := mock.NewMockIDGenerator()
 	tagsSpec := &gen.TagsSpec{
 		Tags: []*gen.TagValuesSpec{
 			{
@@ -44,8 +42,6 @@ func BenchmarkReadFilter(b *testing.B) {
 		},
 	}
 	spec := gen.Spec{
-		OrgID:    idgen.ID(),
-		BucketID: idgen.ID(),
 		Measurements: []gen.MeasurementSpec{
 			{
 				Name:     "m0",
@@ -117,8 +113,6 @@ func BenchmarkReadFilter(b *testing.B) {
 	benchmarkRead(b, sg, func(r influxdb.Reader) error {
 		mem := &memory.Allocator{}
 		tables, err := r.ReadFilter(context.Background(), influxdb.ReadFilterSpec{
-			OrganizationID: spec.OrgID,
-			BucketID:       spec.BucketID,
 			Bounds: execute.Bounds{
 				Start: values.ConvertTime(tr.Start),
 				Stop:  values.ConvertTime(tr.End),
@@ -154,7 +148,7 @@ func benchmarkRead(b *testing.B, sg gen.SeriesGenerator, f func(r influxdb.Reade
 	if err := engine.Open(context.Background()); err != nil {
 		b.Fatal(err)
 	}
-	reader := storageflux.NewReader(readservice.NewStore(engine))
+	reader := storageflux.NewReader(storage2.NewStore(engine.TSDBStore, engine.MetaClient))
 
 	b.ResetTimer()
 	b.ReportAllocs()

@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/influxdata/influxdb/v2/kit/errors"
-	"github.com/influxdata/influxdb/v2/v1/tsdb/engine/tsm1"
+	"github.com/influxdata/influxdb/v2/v1/tsdb/engine/tsm1/value"
 )
 
 type Test struct {

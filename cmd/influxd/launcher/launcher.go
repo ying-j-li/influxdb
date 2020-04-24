@@ -41,6 +41,7 @@ import (
 	"github.com/influxdata/influxdb/v2/snowflake"
 	"github.com/influxdata/influxdb/v2/source"
 	"github.com/influxdata/influxdb/v2/storage"
+	storageflux "github.com/influxdata/influxdb/v2/storage/flux"
 	"github.com/influxdata/influxdb/v2/storage/readservice"
 	taskbackend "github.com/influxdata/influxdb/v2/task/backend"
 	"github.com/influxdata/influxdb/v2/task/backend/coordinator"
@@ -50,7 +51,6 @@ import (
 	"github.com/influxdata/influxdb/v2/telemetry"
 	"github.com/influxdata/influxdb/v2/tenant"
 	storage2 "github.com/influxdata/influxdb/v2/v1/services/storage"
-	"github.com/influxdata/influxdb/v2/storage/reads"
 	_ "github.com/influxdata/influxdb/v2/v1/tsdb/engine/tsm1" // needed for tsm1
 	_ "github.com/influxdata/influxdb/v2/v1/tsdb/index/tsi1"  // needed for tsi1
 	"github.com/influxdata/influxdb/v2/vault"
@@ -684,12 +684,8 @@ func (m *Launcher) run(ctx context.Context) (err error) {
 		backupService platform.BackupService = m.engine
 	)
 
-	storageStore := storage2.NewStore(m.engine.TSDBStore, m.engine.MetaClient)
-	readsReader := reads.NewReader(storageStore)
-
 	deps, err := influxdb.NewDependencies(
-		//storageflux.NewReader(readservice.NewStore(m.engine)),
-		readsReader,
+		storageflux.NewReader(storage2.NewStore(m.engine.TSDBStore, m.engine.MetaClient)),
 		m.engine,
 		authorizer.NewBucketService(bucketSvc, userResourceSvc),
 		authorizer.NewOrgService(orgSvc),
