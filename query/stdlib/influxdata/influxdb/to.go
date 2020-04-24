@@ -19,10 +19,9 @@ import (
 	"github.com/influxdata/flux/values"
 	platform "github.com/influxdata/influxdb/v2"
 	"github.com/influxdata/influxdb/v2/kit/tracing"
-	"github.com/influxdata/influxdb/v2/models"
 	"github.com/influxdata/influxdb/v2/query"
 	"github.com/influxdata/influxdb/v2/storage"
-	"github.com/influxdata/influxdb/v2/v1/tsdb"
+	"github.com/influxdata/influxdb/v2/v1/models"
 )
 
 // ToKind is the kind for the `to` flux function
@@ -567,16 +566,12 @@ func writeTable(ctx context.Context, t *ToTransformation, tbl flux.Table) (err e
 		for i := 0; i < er.Len(); i++ {
 			measurementName = ""
 			fields := make(models.Fields)
-			// leave space for measurement key, value at start, in an effort to
-			// keep kv sorted
-			kv = kv[:2]
+			kv = kv[:0]
 			// Gather the timestamp and the tags.
 			for j, col := range er.Cols() {
 				switch {
 				case col.Label == spec.MeasurementColumn:
 					measurementName = string(er.Strings(j).Value(i))
-					kv[0] = models.MeasurementTagKeyBytes
-					kv[1] = er.Strings(j).Value(i)
 				case col.Label == timeColLabel:
 					valueTime := execute.ValueForRow(er, i, j)
 					if valueTime.IsNull() {
@@ -650,8 +645,6 @@ func writeTable(ctx context.Context, t *ToTransformation, tbl flux.Table) (err e
 				measurementStats[measurementName].Update(mstats)
 			}
 
-			name := tsdb.EncodeNameString(t.OrgID, t.BucketID)
-
 			fieldNames := make([]string, 0, len(fields))
 			for k := range fields {
 				fieldNames = append(fieldNames, k)
@@ -660,11 +653,9 @@ func writeTable(ctx context.Context, t *ToTransformation, tbl flux.Table) (err e
 
 			for _, k := range fieldNames {
 				v := fields[k]
-				// append field tag key and field key
-				kvf := append(kv, models.FieldKeyTagKeyBytes, []byte(k))
-				tags, _ = models.NewTagsKeyValues(tags, kvf...)
+				tags, _ = models.NewTagsKeyValues(tags, kv...)
 
-				pt, err := models.NewPoint(name, tags, models.Fields{k: v}, pointTime)
+				pt, err := models.NewPoint(measurementName, tags, models.Fields{k: v}, pointTime)
 				if err != nil {
 					return err
 				}

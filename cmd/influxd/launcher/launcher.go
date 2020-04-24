@@ -20,7 +20,6 @@ import (
 	"github.com/influxdata/influxdb/v2/authorizer"
 	"github.com/influxdata/influxdb/v2/bolt"
 	"github.com/influxdata/influxdb/v2/chronograf/server"
-	"github.com/influxdata/influxdb/v2/cmd/influxd/inspect"
 	"github.com/influxdata/influxdb/v2/endpoints"
 	"github.com/influxdata/influxdb/v2/gather"
 	"github.com/influxdata/influxdb/v2/http"
@@ -51,9 +50,9 @@ import (
 	"github.com/influxdata/influxdb/v2/telemetry"
 	"github.com/influxdata/influxdb/v2/tenant"
 	storage2 "github.com/influxdata/influxdb/v2/v1/services/storage"
-	"github.com/influxdata/influxdb/v2/v1/storage/reads"
-	_ "github.com/influxdata/influxdb/v2/v1/tsdb/index/tsi1" // needed for tsi1
+	"github.com/influxdata/influxdb/v2/storage/reads"
 	_ "github.com/influxdata/influxdb/v2/v1/tsdb/engine/tsm1" // needed for tsm1
+	_ "github.com/influxdata/influxdb/v2/v1/tsdb/index/tsi1"  // needed for tsi1
 	"github.com/influxdata/influxdb/v2/vault"
 	pzap "github.com/influxdata/influxdb/v2/zap"
 	"github.com/opentracing/opentracing-go"
@@ -313,7 +312,8 @@ func buildLauncherCommand(l *Launcher, cmd *cobra.Command) {
 	}
 
 	cli.BindOptions(cmd, opts)
-	cmd.AddCommand(inspect.NewCommand())
+	// TODO: port influx_inspect tools
+	//cmd.AddCommand(inspect.NewCommand())
 }
 
 // Launcher represents the main program execution.

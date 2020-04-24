@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/influxdata/influxdb/v2/models"
 	"github.com/influxdata/influxdb/v2/pkg/data/gen"
-	"github.com/influxdata/influxdb/v2/storage/reads"
 	"github.com/influxdata/influxdb/v2/storage/reads/datatypes"
+	"github.com/influxdata/influxdb/v2/v1/models"
+	"github.com/influxdata/influxdb/v2/storage/reads"
 )
 
 func TestNewGroupResultSet_Sorting(t *testing.T) {
@@ -437,7 +437,7 @@ func BenchmarkNewGroupResultSet_GroupBy(b *testing.B) {
 		vals[i] = gen.NewCounterByteSequenceCount(card[i])
 	}
 
-	tags := gen.NewTagsValuesSequenceValues("m0", "f0", "tag", vals)
+	tags := gen.NewTagsValuesSequenceValues("tag", vals)
 	rows := make([]reads.SeriesRow, tags.Count())
 	for i := range rows {
 		tags.Next()

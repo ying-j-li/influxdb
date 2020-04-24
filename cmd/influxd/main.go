@@ -9,13 +9,10 @@ import (
 
 	"github.com/influxdata/flux"
 	"github.com/influxdata/influxdb/v2"
-	"github.com/influxdata/influxdb/v2/cmd/influxd/generate"
-	"github.com/influxdata/influxdb/v2/cmd/influxd/inspect"
 	"github.com/influxdata/influxdb/v2/cmd/influxd/launcher"
-	"github.com/influxdata/influxdb/v2/cmd/influxd/restore"
 	_ "github.com/influxdata/influxdb/v2/query/builtin"
-	_ "github.com/influxdata/influxdb/v2/v1/tsdb/index/tsi1"
 	_ "github.com/influxdata/influxdb/v2/v1/tsdb/engine/tsm1"
+	_ "github.com/influxdata/influxdb/v2/v1/tsdb/index/tsi1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -45,9 +42,14 @@ func init() {
 		},
 	})
 	rootCmd.AddCommand(launcher.NewCommand())
-	rootCmd.AddCommand(generate.Command)
-	rootCmd.AddCommand(inspect.NewCommand())
-	rootCmd.AddCommand(restore.Command)
+	// TODO port generate
+	//rootCmd.AddCommand(generate.Command)
+
+	// TODO: port influx_inspect tools
+	//rootCmd.AddCommand(inspect.NewCommand())
+
+	// TODO: FIX
+	//rootCmd.AddCommand(restore.Command)
 	// rootCmd.AddCommand(migrate.Command)
 
 	// TODO: this should be removed in the future: https://github.com/influxdata/influxdb/issues/16220

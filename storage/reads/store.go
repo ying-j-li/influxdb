@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/influxdata/influxdb/v2/models"
 	"github.com/influxdata/influxdb/v2/storage/reads/datatypes"
+	"github.com/influxdata/influxdb/v2/v1/models"
 	"github.com/influxdata/influxdb/v2/v1/tsdb/cursors"
 )
 
@@ -80,14 +80,5 @@ type Store interface {
 	TagKeys(ctx context.Context, req *datatypes.TagKeysRequest) (cursors.StringIterator, error)
 	TagValues(ctx context.Context, req *datatypes.TagValuesRequest) (cursors.StringIterator, error)
 
-	GetSource(orgID, bucketID uint64) proto.Message
-}
-
-// WindowAggregateReader implements the WindowAggregate capability.
-type WindowAggregateReader interface {
-	// HasWindowAggregateCapability checks if this Store supports the capability.
-	HasWindowAggregateCapability(ctx context.Context) bool
-
-	// WindowAggregate will invoke a ReadWindowAggregateRequest against the Store.
-	WindowAggregate(ctx context.Context, req *datatypes.ReadWindowAggregateRequest) (ResultSet, error)
+	GetSource(db, rp string) proto.Message
 }

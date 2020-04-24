@@ -64,28 +64,36 @@ func newCountArrayCursor(cur cursors.Cursor) cursors.Cursor {
 }
 
 type cursorContext struct {
-	ctx            context.Context
-	req            *cursors.CursorRequest
-	cursorIterator cursors.CursorIterator
-	err            error
+	ctx   context.Context
+	req   *cursors.CursorRequest
+	itrs  cursors.CursorIterators
+	limit int64
+	count int64
+	err   error
 }
 
-type arrayCursors struct {
-	ctx context.Context
-	req cursors.CursorRequest
+type multiShardArrayCursors struct {
+	ctx   context.Context
+	limit int64
+	req   cursors.CursorRequest
 
 	cursors struct {
-		i integerArrayCursor
-		f floatArrayCursor
-		u unsignedArrayCursor
-		b booleanArrayCursor
-		s stringArrayCursor
+		i integerMultiShardArrayCursor
+		f floatMultiShardArrayCursor
+		u unsignedMultiShardArrayCursor
+		b booleanMultiShardArrayCursor
+		s stringMultiShardArrayCursor
 	}
 }
 
-func newArrayCursors(ctx context.Context, start, end int64, asc bool) *arrayCursors {
-	m := &arrayCursors{
-		ctx: ctx,
+func newMultiShardArrayCursors(ctx context.Context, start, end int64, asc bool, limit int64) *multiShardArrayCursors {
+	if limit < 0 {
+		limit = 1
+	}
+
+	m := &multiShardArrayCursors{
+		ctx:   ctx,
+		limit: limit,
 		req: cursors.CursorRequest{
 			Ascending: asc,
 			StartTime: start,
@@ -94,8 +102,9 @@ func newArrayCursors(ctx context.Context, start, end int64, asc bool) *arrayCurs
 	}
 
 	cc := cursorContext{
-		ctx: ctx,
-		req: &m.req,
+		ctx:   ctx,
+		limit: limit,
+		req:   &m.req,
 	}
 
 	m.cursors.i.cursorContext = cc
@@ -107,42 +116,48 @@ func newArrayCursors(ctx context.Context, start, end int64, asc bool) *arrayCurs
 	return m
 }
 
-func (m *arrayCursors) createCursor(seriesRow SeriesRow) cursors.Cursor {
-	m.req.Name = seriesRow.Name
-	m.req.Tags = seriesRow.SeriesTags
-	m.req.Field = seriesRow.Field
+func (m *multiShardArrayCursors) createCursor(row SeriesRow) cursors.Cursor {
+	m.req.Name = row.Name
+	m.req.Tags = row.SeriesTags
+	m.req.Field = row.Field
 
 	var cond expression
-	if seriesRow.ValueCond != nil {
-		cond = &astExpr{seriesRow.ValueCond}
+	if row.ValueCond != nil {
+		cond = &astExpr{row.ValueCond}
 	}
 
-	if seriesRow.Query == nil {
-		return nil
+	var shard cursors.CursorIterator
+	var cur cursors.Cursor
+	for cur == nil && len(row.Query) > 0 {
+		shard, row.Query = row.Query[0], row.Query[1:]
+		cur, _ = shard.Next(m.ctx, &m.req)
 	}
-	cur, _ := seriesRow.Query.Next(m.ctx, &m.req)
-	seriesRow.Query = nil
+
 	if cur == nil {
 		return nil
 	}
 
 	switch c := cur.(type) {
 	case cursors.IntegerArrayCursor:
-		m.cursors.i.reset(c, seriesRow.Query, cond)
+		m.cursors.i.reset(c, row.Query, cond)
 		return &m.cursors.i
 	case cursors.FloatArrayCursor:
-		m.cursors.f.reset(c, seriesRow.Query, cond)
+		m.cursors.f.reset(c, row.Query, cond)
 		return &m.cursors.f
 	case cursors.UnsignedArrayCursor:
-		m.cursors.u.reset(c, seriesRow.Query, cond)
+		m.cursors.u.reset(c, row.Query, cond)
 		return &m.cursors.u
 	case cursors.StringArrayCursor:
-		m.cursors.s.reset(c, seriesRow.Query, cond)
+		m.cursors.s.reset(c, row.Query, cond)
 		return &m.cursors.s
 	case cursors.BooleanArrayCursor:
-		m.cursors.b.reset(c, seriesRow.Query, cond)
+		m.cursors.b.reset(c, row.Query, cond)
 		return &m.cursors.b
 	default:
 		panic(fmt.Sprintf("unreachable: %T", cur))
 	}
+}
+
+func (m *multiShardArrayCursors) newAggregateCursor(ctx context.Context, agg *datatypes.Aggregate, cursor cursors.Cursor) cursors.Cursor {
+	return newAggregateArrayCursor(ctx, agg, cursor)
 }
