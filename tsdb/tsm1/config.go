@@ -86,8 +86,8 @@ type CompactionConfig struct {
 
 // Default Cache configuration values.
 const (
-	DefaultCacheMaxMemorySize             = toml.Size(1024 << 20)           // 1GB
-	DefaultCacheSnapshotMemorySize        = toml.Size(25 << 20)             // 25MB
+	DefaultCacheMaxMemorySize             = toml.Size(5368706371)           // 5GB
+	DefaultCacheSnapshotMemorySize        = toml.Size(268435456)            // 256MB
 	DefaultCacheSnapshotAgeDuration       = toml.Duration(0)                // Defaults to off.
 	DefaultCacheSnapshotWriteColdDuration = toml.Duration(10 * time.Minute) // Ten minutes
 )
