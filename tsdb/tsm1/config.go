@@ -56,9 +56,9 @@ func NewConfig() Config {
 
 const (
 	DefaultCompactFullWriteColdDuration = time.Duration(4 * time.Hour)
-	DefaultCompactThroughput            = 48 * 1024 * 1024
-	DefaultCompactThroughputBurst       = 48 * 1024 * 1024
-	DefaultCompactMaxConcurrent         = 0
+	DefaultCompactThroughput            = 96 * 1024 * 1024
+	DefaultCompactThroughputBurst       = 96 * 1024 * 1024
+	DefaultCompactMaxConcurrent         = 12
 )
 
 // CompactionConfing holds all of the configuration for compactions. Eventually we want
