@@ -382,7 +382,7 @@ func (t *CsvTable) recomputeLineProtocolColumns() {
 // CreateLine produces a protocol line out of the supplied row or returns error
 func (t *CsvTable) CreateLine(row []string) (line string, err error) {
 	buffer := make([]byte, 100)[:0]
-	buffer, err = t.AppendLine(buffer, row)
+	buffer, err = t.AppendLine(buffer, row, -1)
 	if err != nil {
 		return "", err
 	}
@@ -390,7 +390,7 @@ func (t *CsvTable) CreateLine(row []string) (line string, err error) {
 }
 
 // AppendLine appends a protocol line to the supplied buffer using a CSV row and returns appended buffer or an error if any
-func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
+func (t *CsvTable) AppendLine(buffer []byte, row []string, lineNumber int) ([]byte, error) {
 	if t.computeLineProtocolColumns() {
 		// validate column data types
 		if t.cachedFieldValue != nil && !IsTypeSupported(t.cachedFieldValue.DataType) {
@@ -438,7 +438,7 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 			buffer = append(buffer, escapeTag(field)...)
 			buffer = append(buffer, '=')
 			var err error
-			buffer, err = appendConverted(buffer, value, t.cachedFieldValue)
+			buffer, err = appendConverted(buffer, value, t.cachedFieldValue, lineNumber)
 			if err != nil {
 				return buffer, CsvColumnError{
 					t.cachedFieldName.Label,
@@ -459,7 +459,7 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 			buffer = append(buffer, field.LineLabel()...)
 			buffer = append(buffer, '=')
 			var err error
-			buffer, err = appendConverted(buffer, value, field)
+			buffer, err = appendConverted(buffer, value, field, lineNumber)
 			if err != nil {
 				return buffer, CsvColumnError{
 					field.Label,
@@ -482,7 +482,7 @@ func (t *CsvTable) AppendLine(buffer []byte, row []string) ([]byte, error) {
 			}
 			buffer = append(buffer, ' ')
 			var err error
-			buffer, err = appendConverted(buffer, timeVal, t.cachedTime)
+			buffer, err = appendConverted(buffer, timeVal, t.cachedTime, lineNumber)
 			if err != nil {
 				return buffer, CsvColumnError{
 					t.cachedTime.Label,
