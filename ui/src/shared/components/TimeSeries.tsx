@@ -15,7 +15,7 @@ import {RunQueryResult, RunQuerySuccessResult} from 'src/shared/apis/query'
 import {runStatusesQuery} from 'src/alerting/utils/statusEvents'
 
 // Utils
-import {getTimeRange} from 'src/dashboards/selectors'
+import {getTimeRangeWithTimezone} from 'src/dashboards/selectors'
 import {getVariables, asAssignment} from 'src/variables/selectors'
 import {getRangeVariable} from 'src/variables/utils/getTimeRangeVars'
 import {isInQuery} from 'src/variables/utils/hydrateVars'
@@ -335,7 +335,7 @@ class TimeSeries extends Component<Props, State> {
 }
 
 const mstp = (state: AppState, props: OwnProps) => {
-  const timeRange = getTimeRange(state)
+  const timeRange = getTimeRangeWithTimezone(state)
 
   // NOTE: cannot use getAllVariables here because the TimeSeries
   // component appends it automatically. That should be fixed
