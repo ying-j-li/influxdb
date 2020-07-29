@@ -8,6 +8,7 @@
 ### Features
 
 1. [19075](https://github.com/influxdata/influxdb/pull/19075): Add resource links to a stack's resources from public HTTP API list/read calls
+1. [18218](https://github.com/influxdata/influxdb/pull/18218): Add Telegram notification.
 
 ### Bug Fixes
 
