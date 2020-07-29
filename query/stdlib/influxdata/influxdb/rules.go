@@ -1023,6 +1023,8 @@ func (rule PushDownGroupAggregateRule) Pattern() plan.Pattern {
 			universe.SumKind,
 			universe.FirstKind,
 			universe.LastKind,
+			universe.MinKind,
+			universe.MaxKind,
 		},
 		plan.Pat(ReadGroupPhysKind))
 }
@@ -1075,6 +1077,46 @@ func (PushDownGroupAggregateRule) Rewrite(ctx context.Context, pn plan.Node) (pl
 			AggregateMethod:   universe.LastKind,
 		})
 		return node, true, nil
+	case universe.MinKind:
+		// ReadGroup() -> min => ReadGroup(min) -> min
+		if feature.PushDownGroupAggregateMinMax().Enabled(ctx) {
+			root := plan.CreatePhysicalNode("min", &universe.MinProcedureSpec{
+				SelectorConfig: execute.SelectorConfig{
+					Column: execute.DefaultValueColLabel,
+				},
+			})
+
+			leaf := plan.CreatePhysicalNode("ReadGroupAggregate", &ReadGroupPhysSpec{
+				ReadRangePhysSpec: group.ReadRangePhysSpec,
+				GroupMode:         group.GroupMode,
+				GroupKeys:         group.GroupKeys,
+				AggregateMethod:   universe.MinKind,
+			})
+
+			root.AddPredecessors(leaf)
+			leaf.AddSuccessors(root)
+			return root, true, nil
+		}
+	case universe.MaxKind:
+		// ReadGroup() -> max => ReadGroup(max) -> max
+		if feature.PushDownGroupAggregateMinMax().Enabled(ctx) {
+			root := plan.CreatePhysicalNode("max", &universe.MaxProcedureSpec{
+				SelectorConfig: execute.SelectorConfig{
+					Column: execute.DefaultValueColLabel,
+				},
+			})
+
+			leaf := plan.CreatePhysicalNode("ReadGroupAggregate", &ReadGroupPhysSpec{
+				ReadRangePhysSpec: group.ReadRangePhysSpec,
+				GroupMode:         group.GroupMode,
+				GroupKeys:         group.GroupKeys,
+				AggregateMethod:   universe.MaxKind,
+			})
+
+			root.AddPredecessors(leaf)
+			leaf.AddSuccessors(root)
+			return root, true, nil
+		}
 	}
 	return pn, false, nil
 }
@@ -1102,6 +1144,12 @@ func canPushGroupedAggregate(ctx context.Context, pn plan.Node) bool {
 	case universe.LastKind:
 		agg := pn.ProcedureSpec().(*universe.LastProcedureSpec)
 		return caps.HaveLast() && agg.Column == execute.DefaultValueColLabel
+	case universe.MaxKind:
+		agg := pn.ProcedureSpec().(*universe.MaxProcedureSpec)
+		return caps.HaveMax() && agg.Column == execute.DefaultValueColLabel
+	case universe.MinKind:
+		agg := pn.ProcedureSpec().(*universe.MinProcedureSpec)
+		return caps.HaveMin() && agg.Column == execute.DefaultValueColLabel
 	}
 	return false
 }
