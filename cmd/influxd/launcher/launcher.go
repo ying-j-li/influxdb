@@ -219,7 +219,7 @@ func launcherOpts(l *Launcher) []cli.Opt {
 		{
 			DestP:   &l.enginePath,
 			Flag:    "engine-path",
-			Default: dir,
+			Default: filepath.Join(dir, "engine"),
 			Desc:    "path to persistent engine files",
 		},
 		{
